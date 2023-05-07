@@ -1,12 +1,3 @@
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~# CatUserBot #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-# Copyright (C) 2020-2023 by TgCatUB@Github.
-
-# This file is part of: https://github.com/TgCatUB/catuserbot
-# and is released under the "GNU v3.0 License Agreement".
-
-# Please see: https://github.com/TgCatUB/catuserbot/blob/master/LICENSE
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-
 import asyncio
 import base64
 import contextlib
@@ -214,8 +205,10 @@ async def stickerpack_spam(event):
     for m in reqd_sticker_set.documents:
         if gvarstatus("spamwork") is None:
             return
-        with contextlib.suppress(ForbiddenError):
+        try:
             await event.client.send_file(event.chat_id, m)
+        except ForbiddenError:
+            pass
         await asyncio.sleep(0.7)
     await catevent.delete()
     if BOTLOG:
@@ -381,16 +374,18 @@ async def react_spam(event):  # By @FeelDeD
         ]
     else:
         getchat = await event.client(GetFullChannelRequest(channel=event.chat_id))
-        if grp_emoji := getchat.full_chat.available_reactions:
-            emoji = grp_emoji
-        else:
+        grp_emoji = getchat.full_chat.available_reactions
+        if not grp_emoji:
             return await edit_delete(
                 event, "`Reaction is not active in this chat..`", 6
             )
+        emoji = grp_emoji
     addgvar("spamwork", True)
     await catevent.delete()
     while gvarstatus("spamwork"):
         for i in emoji:
             await asyncio.sleep(0.2)
-            with contextlib.suppress(ForbiddenError):
+            try:
                 await msg.react(i, True)
+            except ForbiddenError:
+                pass

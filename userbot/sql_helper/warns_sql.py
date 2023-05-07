@@ -1,12 +1,3 @@
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~# CatUserBot #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-# Copyright (C) 2020-2023 by TgCatUB@Github.
-
-# This file is part of: https://github.com/TgCatUB/catuserbot
-# and is released under the "GNU v3.0 License Agreement".
-
-# Please see: https://github.com/TgCatUB/catuserbot/blob/master/LICENSE
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-
 import threading
 
 from sqlalchemy import Boolean, Column, Integer, String, UnicodeText, distinct, func
@@ -94,7 +85,11 @@ def reset_warns(user_id, chat_id):
 def get_warns(user_id, chat_id):
     try:
         user = SESSION.query(Warns).get((user_id, str(chat_id)))
-        return (user.num_warns, user.reasons) if user else None
+        if not user:
+            return None
+        reasons = user.reasons
+        num = user.num_warns
+        return num, reasons
     finally:
         SESSION.close()
 

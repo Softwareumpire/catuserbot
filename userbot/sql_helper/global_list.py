@@ -1,12 +1,3 @@
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~# CatUserBot #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-# Copyright (C) 2020-2023 by TgCatUB@Github.
-
-# This file is part of: https://github.com/TgCatUB/catuserbot
-# and is released under the "GNU v3.0 License Agreement".
-
-# Please see: https://github.com/TgCatUB/catuserbot/blob/master/LICENSE
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-
 import threading
 
 from sqlalchemy import Column, String, UnicodeText, distinct, func
@@ -24,7 +15,7 @@ class CatGloballist(BASE):
         self.group_id = str(group_id)
 
     def __repr__(self):
-        return f"<Cat global values '{self.group_id}' for {self.keywoard}>"
+        return "<Cat global values '%s' for %s>" % (self.group_id, self.keywoard)
 
     def __eq__(self, other):
         return (

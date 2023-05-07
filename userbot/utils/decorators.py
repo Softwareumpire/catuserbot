@@ -1,13 +1,3 @@
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~# CatUserBot #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-# Copyright (C) 2020-2023 by TgCatUB@Github.
-
-# This file is part of: https://github.com/TgCatUB/catuserbot
-# and is released under the "GNU v3.0 License Agreement".
-
-# Please see: https://github.com/TgCatUB/catuserbot/blob/master/LICENSE
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-
-import contextlib
 import datetime
 import inspect
 import re
@@ -191,21 +181,27 @@ def register(**args):
     allow_sudo = args.get("allow_sudo", False)
 
     if pattern is not None and not pattern.startswith("(?i)"):
-        args["pattern"] = f"(?i){pattern}"
+        args["pattern"] = "(?i)" + pattern
 
     if "disable_edited" in args:
         del args["disable_edited"]
 
     reg = re.compile("(.*)")
     if pattern is not None:
-        with contextlib.suppress(BaseException):
+        try:
             cmd = re.search(reg, pattern)
-            with contextlib.suppress(BaseException):
-                cmd = cmd[1].replace("$", "").replace("\\", "").replace("^", "")
+            try:
+                cmd = cmd.group(1).replace("$", "").replace("\\", "").replace("^", "")
+            except BaseException:
+                pass
+
             try:
                 CMD_LIST[file_test].append(cmd)
             except BaseException:
                 CMD_LIST.update({file_test: [cmd]})
+        except BaseException:
+            pass
+
     if allow_sudo:
         args["from_users"] = list(Config.SUDO_USERS)
         # Mutually exclusive with outgoing (can only set one of either).
@@ -247,25 +243,33 @@ def command(**args):
     args["outgoing"] = True
     if bool(args["incoming"]):
         args["outgoing"] = False
-    with contextlib.suppress(BaseException):
+    try:
         if pattern is not None and not pattern.startswith("(?i)"):
-            args["pattern"] = f"(?i){pattern}"
+            args["pattern"] = "(?i)" + pattern
+    except BaseException:
+        pass
     reg = re.compile("(.*)")
     if pattern is not None:
-        with contextlib.suppress(BaseException):
+        try:
             cmd = re.search(reg, pattern)
-            with contextlib.suppress(BaseException):
-                cmd = cmd[1].replace("$", "").replace("\\", "").replace("^", "")
+            try:
+                cmd = cmd.group(1).replace("$", "").replace("\\", "").replace("^", "")
+            except BaseException:
+                pass
             try:
                 CMD_LIST[file_test].append(cmd)
             except BaseException:
                 CMD_LIST.update({file_test: [cmd]})
+        except BaseException:
+            pass
     if allow_sudo:
         args["from_users"] = list(Config.SUDO_USERS)
         args["incoming"] = True
     del allow_sudo
-    with contextlib.suppress(BaseException):
+    try:
         del args["allow_sudo"]
+    except BaseException:
+        pass
     if gvarstatus("blacklist_chats") is not None:
         args["blacklist_chats"] = True
         args["chats"] = blacklist_chats_list()

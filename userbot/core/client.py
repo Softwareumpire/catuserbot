@@ -1,12 +1,3 @@
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~# CatUserBot #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-# Copyright (C) 2020-2023 by TgCatUB@Github.
-
-# This file is part of: https://github.com/TgCatUB/catuserbot
-# and is released under the "GNU v3.0 License Agreement".
-
-# Please see: https://github.com/TgCatUB/catuserbot/blob/master/LICENSE
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-
 import asyncio
 import datetime
 import inspect
@@ -36,12 +27,7 @@ from ..helpers.utils.utils import runcmd
 from ..sql_helper.globals import gvarstatus
 from . import BOT_INFO, CMD_INFO, GRP_INFO, LOADED_CMDS, PLG_INFO
 from .cmdinfo import _format_about
-from .data import (
-    _sudousers_list,
-    _vcusers_list,
-    blacklist_chats_list,
-    sudo_enabled_cmds,
-)
+from .data import _sudousers_list, blacklist_chats_list, sudo_enabled_cmds
 from .events import *
 from .fasttelethon import download_file, upload_file
 from .logger import logging
@@ -75,11 +61,9 @@ class CatUserBotClient(TelegramClient):
         forword=False,
         disable_errors: bool = False,
         command: str or tuple = None,
-        public: bool = False,
         **kwargs,
     ) -> callable:  # sourcery no-metrics
-        if not public:
-            kwargs["func"] = kwargs.get("func", lambda e: e.via_bot_id is None)
+        kwargs["func"] = kwargs.get("func", lambda e: e.via_bot_id is None)
         kwargs.setdefault("forwards", forword)
         if gvarstatus("blacklist_chats") is not None:
             kwargs["blacklist_chats"] = True
@@ -90,7 +74,7 @@ class CatUserBotClient(TelegramClient):
         file_test = file_test.stem.replace(".py", "")
         if command is not None:
             command = list(command)
-            if command[1] not in BOT_INFO:
+            if not command[1] in BOT_INFO:
                 BOT_INFO.append(command[1])
             try:
                 if file_test not in GRP_INFO[command[1]]:
@@ -102,7 +86,7 @@ class CatUserBotClient(TelegramClient):
                     PLG_INFO[file_test].append(command[0])
             except BaseException:
                 PLG_INFO.update({file_test: [command[0]]})
-            if command[0] not in CMD_INFO:
+            if not command[0] in CMD_INFO:
                 CMD_INFO[command[0]] = [_format_about(info)]
         if pattern is not None:
             if (
@@ -121,10 +105,12 @@ class CatUserBotClient(TelegramClient):
             async def wrapper(check):  # sourcery no-metrics
                 # sourcery skip: low-code-quality
                 if groups_only and not check.is_group:
-                    return await edit_delete(check, "`I don't think this is a group.`")
+                    return await edit_delete(
+                        check, "`I don't think this is a group.`", 10
+                    )
                 if private_only and not check.is_private:
                     return await edit_delete(
-                        check, "`I don't think this is a personal Chat.`"
+                        check, "`I don't think this is a personal Chat.`", 10
                     )
                 try:
                     await func(check)
@@ -137,25 +123,26 @@ class CatUserBotClient(TelegramClient):
                 except MessageIdInvalidError:
                     LOGS.error("Message was deleted or cant be found")
                 except BotInlineDisabledError:
-                    await edit_delete(check, "`Turn on Inline mode for our bot`")
+                    await edit_delete(check, "`Turn on Inline mode for our bot`", 10)
                 except ChatSendStickersForbiddenError:
                     await edit_delete(
-                        check, "`I guess i can't send stickers in this chat`"
+                        check, "`I guess i can't send stickers in this chat`", 10
                     )
                 except BotResponseTimeoutError:
                     await edit_delete(
-                        check, "`The bot didnt answer to your query in time`"
+                        check, "`The bot didnt answer to your query in time`", 10
                     )
                 except ChatSendMediaForbiddenError:
-                    await edit_delete(check, "`You can't send media in this chat`")
+                    await edit_delete(check, "`You can't send media in this chat`", 10)
                 except AlreadyInConversationError:
                     await edit_delete(
                         check,
                         "`A conversation is already happening with the given chat. try again after some time.`",
+                        10,
                     )
                 except ChatSendInlineForbiddenError:
                     await edit_delete(
-                        check, "`You can't send inline messages in this chat.`"
+                        check, "`You can't send inline messages in this chat.`", 10
                     )
                 except FloodWaitError as e:
                     LOGS.error(
@@ -209,7 +196,7 @@ class CatUserBotClient(TelegramClient):
 
             from .session import catub
 
-            if func.__doc__ is not None:
+            if not func.__doc__ is None:
                 CMD_INFO[command[0]].append((func.__doc__).strip())
             if pattern is not None:
                 if command is not None:
@@ -228,44 +215,25 @@ class CatUserBotClient(TelegramClient):
                     wrapper,
                     NewMessage(pattern=REGEX_.regex1, outgoing=True, **kwargs),
                 )
-                if public:
-                    if edited:
+                if allow_sudo and gvarstatus("sudoenable") is not None:
+                    if command is None or command[0] in sudo_enabledcmds:
+                        if edited:
+                            catub.add_event_handler(
+                                wrapper,
+                                MessageEdited(
+                                    pattern=REGEX_.regex2,
+                                    from_users=_sudousers_list(),
+                                    **kwargs,
+                                ),
+                            )
                         catub.add_event_handler(
                             wrapper,
-                            MessageEdited(
-                                pattern=REGEX_.regex2,
-                                from_users=_vcusers_list(),
-                                **kwargs,
-                            ),
-                        )
-                    catub.add_event_handler(
-                        wrapper,
-                        NewMessage(
-                            pattern=REGEX_.regex2, from_users=_vcusers_list(), **kwargs
-                        ),
-                    )
-                if (
-                    allow_sudo
-                    and gvarstatus("sudoenable") is not None
-                    and (command is None or command[0] in sudo_enabledcmds)
-                ):
-                    if edited:
-                        catub.add_event_handler(
-                            wrapper,
-                            MessageEdited(
+                            NewMessage(
                                 pattern=REGEX_.regex2,
                                 from_users=_sudousers_list(),
                                 **kwargs,
                             ),
                         )
-                    catub.add_event_handler(
-                        wrapper,
-                        NewMessage(
-                            pattern=REGEX_.regex2,
-                            from_users=_sudousers_list(),
-                            **kwargs,
-                        ),
-                    )
             else:
                 if file_test in LOADED_CMDS and func in LOADED_CMDS[file_test]:
                     return None
@@ -349,7 +317,7 @@ class CatUserBotClient(TelegramClient):
 
             from .session import catub
 
-            if edited:
+            if edited is True:
                 catub.tgbot.add_event_handler(func, events.MessageEdited(**kwargs))
             else:
                 catub.tgbot.add_event_handler(func, events.NewMessage(**kwargs))

@@ -1,12 +1,3 @@
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~# CatUserBot #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-# Copyright (C) 2020-2023 by TgCatUB@Github.
-
-# This file is part of: https://github.com/TgCatUB/catuserbot
-# and is released under the "GNU v3.0 License Agreement".
-
-# Please see: https://github.com/TgCatUB/catuserbot/blob/master/LICENSE
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-
 import contextlib
 import sys
 
@@ -27,8 +18,8 @@ from .utils import (
 
 LOGS = logging.getLogger("CatUserbot")
 
-LOGS.info(userbot.__copyright__)
-LOGS.info(f"Licensed under the terms of the {userbot.__license__}")
+print(userbot.__copyright__)
+print(f"Licensed under the terms of the {userbot.__license__}")
 
 cmdhr = Config.COMMAND_HAND_LER
 
@@ -45,17 +36,13 @@ async def startup_process():
     await verifyLoggerGroup()
     await load_plugins("plugins")
     await load_plugins("assistant")
-    LOGS.info(
-        "============================================================================"
+    print("============================================================")
+    print("Yay your userbot is officially working.!!!")
+    print(
+        f"Congratulation, now type {cmdhr}alive to see message if catub is live\
+        \nIf you need assistance, head to https://t.me/catuserbot_support"
     )
-    LOGS.info("||               Yay your userbot is officially working.!!!")
-    LOGS.info(
-        f"||   Congratulation, now type {cmdhr}alive to see message if catub is live"
-    )
-    LOGS.info("||   If you need assistance, head to https://t.me/catuserbot_support")
-    LOGS.info(
-        "============================================================================"
-    )
+    print("============================================================")
     await verifyLoggerGroup()
     await add_bot_to_logger_group(BOTLOG_CHATID)
     if PM_LOGGER_GROUP_ID != -100:
@@ -65,21 +52,16 @@ async def startup_process():
 
 
 async def externalrepo():
-    string = "<b>Your external repo plugins have imported.<b>\n\n"
     if Config.EXTERNAL_REPO:
-        data = await install_externalrepo(
+        await install_externalrepo(
             Config.EXTERNAL_REPO, Config.EXTERNAL_REPOBRANCH, "xtraplugins"
         )
-        string += f"<b>➜ Repo:  </b><a href='{data[0]}'><b>{data[1]}</b></a>\n<b>     • Imported Plugins:</b>  <code>{data[2]}</code>\n<b>     • Failed to Import:</b>  <code>{', '.join(data[3])}</code>\n\n"
     if Config.BADCAT:
-        data = await install_externalrepo(
+        await install_externalrepo(
             Config.BADCAT_REPO, Config.BADCAT_REPOBRANCH, "badcatext"
         )
-        string += f"<b>➜ Repo:  </b><a href='{data[0]}'><b>{data[1]}</b></a>\n<b>     • Imported Plugins:</b>  <code>{data[2]}</code>\n<b>     • Failed to Import:</b>  <code>{', '.join(data[3])}</code>\n\n"
     if Config.VCMODE:
-        data = await install_externalrepo(Config.VC_REPO, Config.VC_REPOBRANCH, "catvc")
-        string += f"<b>➜ Repo:  </b><a href='{data[0]}'><b>{data[1]}</b></a>\n<b>     • Imported Plugins:</b>  <code>{data[2]}</code>\n<b>     • Failed to Import:</b>  <code>{', '.join(data[3])}</code>\n\n"
-    await catub.tgbot.send_message(BOTLOG_CHATID, string, parse_mode="html")
+        await install_externalrepo(Config.VC_REPO, Config.VC_REPOBRANCH, "catvc")
 
 
 catub.loop.run_until_complete(startup_process())

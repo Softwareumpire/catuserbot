@@ -1,13 +1,11 @@
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~# CatUserBot #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-# Copyright (C) 2020-2023 by TgCatUB@Github.
+# Heroku manager for your catuserbot
 
-# This file is part of: https://github.com/TgCatUB/catuserbot
-# and is released under the "GNU v3.0 License Agreement".
+# CC- @refundisillegal\nSyntax:-\n.get var NAME\n.del var NAME\n.set var NAME
 
-# Please see: https://github.com/TgCatUB/catuserbot/blob/master/LICENSE
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-# Special Credit : Adek Maulana.
+# Copyright (C) 2020 Adek Maulana.
+# All rights reserved.
 
+import asyncio
 import math
 import os
 
@@ -15,82 +13,59 @@ import heroku3
 import requests
 import urllib3
 
-from userbot import BOTLOG_CHATID, catub
+from userbot import catub
 
 from ..Config import Config
 from ..core.managers import edit_delete, edit_or_reply
-from ..helpers import config_helper as dBcof
 
 plugin_category = "tools"
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # =================
 
+Heroku = heroku3.from_key(Config.HEROKU_API_KEY)
 heroku_api = "https://api.heroku.com"
-
-
-def heroku_app():
-    if (Config.HEROKU_APP_NAME is None) or (Config.HEROKU_API_KEY is None):
-        return (
-            None,
-            "Set the required vars in heroku to function this normally `HEROKU_API_KEY` and `HEROKU_APP_NAME`.",
-        )
-    try:
-        Heroku = heroku3.from_key(Config.HEROKU_API_KEY)
-        app = Heroku.app(Config.HEROKU_APP_NAME)
-        return app, Heroku
-    except BaseException:
-        return (
-            None,
-            "Please make sure your Heroku API Key, Your App name are configured correctly in the heroku",
-        )
+HEROKU_APP_NAME = Config.HEROKU_APP_NAME
+HEROKU_API_KEY = Config.HEROKU_API_KEY
 
 
 @catub.cat_cmd(
-    pattern="(set|get|del|info) var(?:\s|$)([\s\S]*)",
+    pattern="(set|get|del) var ([\s\S]*)",
     command=("var", plugin_category),
     info={
-        "header": "To manage config vars.",
+        "header": "To manage heroku vars.",
         "flags": {
-            "set": "To set new var in vps or modify the old var",
+            "set": "To set new var in heroku or modify the old var",
             "get": "To show the already existing var value.",
             "del": "To delete the existing value",
-            "info": "To get info about current available vars",
         },
         "usage": [
             "{tr}set var <var name> <var value>",
             "{tr}get var <var name>",
             "{tr}del var <var name>",
-            "{tr}info var",
         ],
         "examples": [
             "{tr}get var ALIVE_NAME",
         ],
     },
 )
-async def variable(event):
-    "Manage most of ConfigVars setting, set new var, get current var, or delete event..."
-    app, Heroku = heroku_app()
-    value = None
-    if not app:
-        return await edit_delete(event, Heroku)
-    cmd = event.pattern_match.group(1)
-    if cmd == "info":
-        return await edit_delete(event, dBcof.vars_info(), 60)
-    variable = event.pattern_match.group(2)
-    if " " in variable:
-        variable, value = variable.split(" ", 1)
-    if not variable:
-        return await edit_delete(event, "`What to do without Config Var??`")
-    if variable in dBcof.var_list:
-        cat = await edit_or_reply(event, "`Processing...`")
-        data = await dBcof.setup_vars(event, cmd, variable, value)
-        return await edit_delete(cat, data)
-
+async def variable(var):  # sourcery no-metrics
+    """
+    Manage most of ConfigVars setting, set new var, get current var, or delete var...
+    """
+    if (Config.HEROKU_API_KEY is None) or (Config.HEROKU_APP_NAME is None):
+        return await edit_delete(
+            var,
+            "Set the required vars in heroku to function this normally `HEROKU_API_KEY` and `HEROKU_APP_NAME`.",
+        )
+    app = Heroku.app(Config.HEROKU_APP_NAME)
+    exe = var.pattern_match.group(1)
     heroku_var = app.config()
-    if cmd == "get":
-        cat = await edit_or_reply(event, "`Getting information...`")
+    if exe == "get":
+        cat = await edit_or_reply(var, "`Getting information...`")
+        await asyncio.sleep(1.0)
         try:
+            variable = var.pattern_match.group(2).split()[0]
             if variable in heroku_var:
                 return await edit_or_reply(
                     cat,
@@ -114,39 +89,38 @@ async def variable(event):
                     "================================",
                 )
             os.remove("configs.json")
-    elif cmd == "set":
-        cat = await edit_or_reply(event, "`Setting information...`")
+    elif exe == "set":
+        variable = "".join(var.text.split(maxsplit=2)[2:])
+        cat = await edit_or_reply(var, "`Setting information...`")
+        if not variable:
+            return await edit_or_reply(cat, "`.set var <ConfigVars-name> <value>`")
+        value = "".join(variable.split(maxsplit=1)[1:])
+        variable = "".join(variable.split(maxsplit=1)[0])
         if not value:
             return await edit_or_reply(cat, "`.set var <ConfigVars-name> <value>`")
+        await asyncio.sleep(1.5)
         if variable in heroku_var:
             await edit_or_reply(
                 cat, f"`{variable}` **successfully changed to  ->  **`{value}`"
-            )
-            await event.client.send_message(
-                BOTLOG_CHATID,
-                f"#CONFIG_VAR  #UPDATED\n\n`{variable}` = `{value}`",
-                silent=True,
             )
         else:
             await edit_or_reply(
                 cat, f"`{variable}`**  successfully added with value`  ->  **{value}`"
             )
-            await event.client.send_message(
-                BOTLOG_CHATID,
-                f"#CONFIG_VAR  #ADDED\n\n`{variable}` = `{value}`",
-                silent=True,
-            )
         heroku_var[variable] = value
-    elif cmd == "del":
-        cat = await edit_or_reply(
-            event, "`Getting information to deleting variable...`"
-        )
+    elif exe == "del":
+        cat = await edit_or_reply(var, "`Getting information to deleting variable...`")
+        try:
+            variable = var.pattern_match.group(2).split()[0]
+        except IndexError:
+            return await edit_or_reply(
+                cat, "`Please specify ConfigVars you want to delete`"
+            )
+        await asyncio.sleep(1.5)
         if variable not in heroku_var:
             return await edit_or_reply(cat, f"`{variable}`**  does not exist**")
+
         await edit_or_reply(cat, f"`{variable}`  **successfully deleted**")
-        await event.client.send_message(
-            BOTLOG_CHATID, f"#CONFIG_VAR  #DELETED\n\n`{variable}`", silent=True
-        )
         del heroku_var[variable]
 
 
@@ -159,10 +133,14 @@ async def variable(event):
     },
 )
 async def dyno_usage(dyno):
-    "Get your account Dyno Usage"
-    app, Heroku = heroku_app()
-    if not app:
-        return await edit_delete(dyno, Heroku)
+    """
+    Get your account Dyno Usage
+    """
+    if (HEROKU_APP_NAME is None) or (HEROKU_API_KEY is None):
+        return await edit_delete(
+            dyno,
+            "Set the required vars in heroku to function this normally `HEROKU_API_KEY` and `HEROKU_APP_NAME`.",
+        )
     dyno = await edit_or_reply(dyno, "`Processing...`")
     useragent = (
         "Mozilla/5.0 (Linux; Android 10; SM-G975F) "
@@ -203,6 +181,7 @@ async def dyno_usage(dyno):
         AppPercentage = math.floor(App[0]["quota_used"] * 100 / quota)
     AppHours = math.floor(AppQuotaUsed / 60)
     AppMinutes = math.floor(AppQuotaUsed % 60)
+    await asyncio.sleep(1.5)
     return await dyno.edit(
         "**Dyno Usage**:\n\n"
         f" -> `Dyno usage for`  **{Config.HEROKU_APP_NAME}**:\n"
@@ -216,21 +195,30 @@ async def dyno_usage(dyno):
 
 
 @catub.cat_cmd(
-    pattern="herokulogs$",
-    command=("herokulogs", plugin_category),
+    pattern="(herokulogs|logs)$",
+    command=("logs", plugin_category),
     info={
         "header": "To get recent 100 lines logs from heroku.",
         "usage": ["{tr}herokulogs", "{tr}logs"],
     },
 )
-async def herokulogs(event):
+async def _(dyno):
     "To get recent 100 lines logs from heroku"
-    app, Heroku = heroku_app()
-    if not app:
-        return await edit_delete(event, Heroku)
+    if (HEROKU_APP_NAME is None) or (HEROKU_API_KEY is None):
+        return await edit_delete(
+            dyno,
+            "Set the required vars in heroku to function this normally `HEROKU_API_KEY` and `HEROKU_APP_NAME`.",
+        )
+    try:
+        Heroku = heroku3.from_key(HEROKU_API_KEY)
+        app = Heroku.app(HEROKU_APP_NAME)
+    except BaseException:
+        return await dyno.reply(
+            " Please make sure your Heroku API Key, Your App name are configured correctly in the heroku"
+        )
     data = app.get_log()
     await edit_or_reply(
-        event, data, deflink=True, linktext="**Recent 100 lines of heroku logs: **"
+        dyno, data, deflink=True, linktext="**Recent 100 lines of heroku logs: **"
     )
 
 
@@ -267,14 +255,19 @@ def prettyjson(obj, indent=2, maxlinelength=80):
         ],
     },
 )
-async def buildpack(event):
+async def variable(event):
     "Manange heroku buildpacks with heroku api"
-    app, Heroku = heroku_app()
-    if not app:
-        return await edit_delete(event, Heroku)
+    if (Config.HEROKU_API_KEY is None) or (Config.HEROKU_APP_NAME is None):
+        return await edit_delete(
+            event,
+            "Set the required vars in heroku to function this normally `HEROKU_API_KEY` and `HEROKU_APP_NAME`.",
+        )
+    app = Heroku.app(Config.HEROKU_APP_NAME)
     cmd = event.pattern_match.group(1).lower()
     link = event.pattern_match.group(2)
-    buidpacks = [item.buildpack.url for item in app.buildpacks()]
+    buidpacks = []
+    for item in app.buildpacks():
+        buidpacks.append(item.buildpack.url)
     if cmd and not link:
         return await edit_delete(event, "**Error::** `Give buildpack link..`")
     elif cmd == "add":
@@ -286,7 +279,8 @@ async def buildpack(event):
         app.update_buildpacks(buidpacks)
         return await edit_delete(
             event,
-            "**Success:** __Buildpack connected.\nDo `.update deploy` to complete updating__",
+            f"**Success:** __Buildpack connected.\nDo `.update deploy` to complete updating__",
+            30,
         )
     elif cmd == "del":
         if link not in buidpacks:
@@ -298,7 +292,8 @@ async def buildpack(event):
         app.update_buildpacks(buidpacks)
         return await edit_delete(
             event,
-            "**Success:** __Buildpack removed.\nDo `.update deploy` to complete updating__",
+            f"**Success:** __Buildpack removed.\nDo `.update deploy` to complete updating__",
+            30,
         )
     string = (
         f"__**Currently available buildpacks for {Config.HEROKU_APP_NAME}:-**__\n\n"

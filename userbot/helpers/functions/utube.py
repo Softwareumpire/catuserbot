@@ -1,12 +1,3 @@
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~# CatUserBot #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-# Copyright (C) 2020-2023 by TgCatUB@Github.
-
-# This file is part of: https://github.com/TgCatUB/catuserbot
-# and is released under the "GNU v3.0 License Agreement".
-
-# Please see: https://github.com/TgCatUB/catuserbot/blob/master/LICENSE
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-
 import os
 import re
 import urllib.request
@@ -57,7 +48,9 @@ async def yt_search(cat):
             k += 1
             if k > 3:
                 break
-        return video_link[0] if video_link else "Couldnt fetch results"
+        if video_link:
+            return video_link[0]
+        return "Couldnt fetch results"
     except Exception:
         return "Couldnt fetch results"
 
@@ -164,7 +157,9 @@ async def result_formatter(results: list):
         title = f'<a href={r.get("link")}><b>{r.get("title")}</b></a>\n'
         out = title
         if r.get("descriptionSnippet"):
-            out += f'<code>{"".join(x.get("text") for x in r.get("descriptionSnippet"))}</code>\n\n'
+            out += "<code>{}</code>\n\n".format(
+                "".join(x.get("text") for x in r.get("descriptionSnippet"))
+            )
         out += f'<b>❯  Duration:</b> {r.get("accessibility").get("duration")}\n'
         views = f'<b>❯  Views:</b> {r.get("viewCount").get("short")}\n'
         out += views

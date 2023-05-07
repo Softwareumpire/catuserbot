@@ -1,12 +1,3 @@
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~# CatUserBot #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-# Copyright (C) 2020-2023 by TgCatUB@Github.
-
-# This file is part of: https://github.com/TgCatUB/catuserbot
-# and is released under the "GNU v3.0 License Agreement".
-
-# Please see: https://github.com/TgCatUB/catuserbot/blob/master/LICENSE
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-
 import contextlib
 import json
 import os
@@ -31,12 +22,13 @@ async def meme_type(message):
                 mime = message.document.mime_type
                 if mime == "application/x-tgsticker":
                     return "Animated Sticker"
-                return "Video Sticker" if mime == "video/webm" else "Static Sticker"
+                if mime == "video/webm":
+                    return "Video Sticker"
+                return "Static Sticker"
             if message.video:
                 return "Video"
             if message.document:
                 mime = message.document.mime_type
-                ext = os.path.splitext(message.file.name)[1]
                 if mime != "image/gif" and mime.split("/")[0] == "image":
                     return "Photo"
                 if mime == "image/gif":
@@ -45,9 +37,7 @@ async def meme_type(message):
                     return "Video"
                 if mime == "application/x-tgsticker":
                     return "Animated Sticker"
-                return (
-                    "Video" if ext in [".mp4", ".mkv", ".avi", ".m4v"] else "Document"
-                )
+                return "Document"
         except AttributeError:
             return await file_type(message)
     return None
@@ -114,7 +104,9 @@ async def file_type(message):
     if media["type"] == "Image":
         if media["format"] == "GIF":
             return "Gif"
-        return "Static Sticker" if media["format"] == "WebP" else "Photo"
+        if media["format"] == "WebP":
+            return "Static Sticker"
+        return "Photo"
     elif media["type"] == "Video":
         if media["audio"] == "None":
             return "Video Sticker" if media["format"] == "WebM" else "Gif"

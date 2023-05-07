@@ -1,12 +1,3 @@
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~# CatUserBot #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-# Copyright (C) 2020-2023 by TgCatUB@Github.
-
-# This file is part of: https://github.com/TgCatUB/catuserbot
-# and is released under the "GNU v3.0 License Agreement".
-
-# Please see: https://github.com/TgCatUB/catuserbot/blob/master/LICENSE
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-
 import io
 import os
 from random import randint, uniform
@@ -18,7 +9,7 @@ from telethon.tl.types import DocumentAttributeFilename
 
 from userbot import Convert, catub
 
-from ..core.managers import edit_delete, edit_or_reply
+from ..core.managers import edit_or_reply
 from ..helpers.functions import delete_conv
 from ..helpers.utils import reply_id
 
@@ -80,7 +71,9 @@ async def check_media(reply_message):
             data = reply_message.media.document
         else:
             return False
-    return False if not data or data is None else data
+    if not data or data is None:
+        return False
+    return data
 
 
 @catub.cat_cmd(
